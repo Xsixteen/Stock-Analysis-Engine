@@ -6,10 +6,11 @@ import json
 import sys
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 import finnhub
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import FINNHUB_API_KEY
+load_dotenv()
+
 
 def get_news_for_stocks():
     """Get 3 days of news for selected stocks"""
@@ -26,8 +27,13 @@ def get_news_for_stocks():
     
     print(f"\n📰 Fetching news for {len(STOCKS)} stocks")
     print(f"📅 Date range: {three_days_ago} to {today}\n")
-    
-    client = finnhub.Client(api_key=FINNHUB_API_KEY)
+
+    api_key = os.getenv("FINNHUB_API_KEY")
+    if not api_key:
+        print("❌ Missing FINNHUB_API_KEY in environment variables")
+        sys.exit(1)
+
+    client = finnhub.Client(api_key=api_key)
     
     all_news = {}
     

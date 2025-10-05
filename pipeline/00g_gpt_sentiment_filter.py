@@ -6,16 +6,21 @@ import json
 import sys
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 from openai import OpenAI
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import OPENAI_API_KEY
+load_dotenv()
 
 def analyze_news_sentiment():
     """Use GPT to filter out risky stocks"""
     print("="*60)
     print("STEP 0G: GPT Sentiment Analysis")
     print("="*60)
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("❌ Missing OPENAI_API_KEY in environment variables")
+        sys.exit(1)
     
     # Load news
     with open('data/finnhub_news.json', 'r') as f:
@@ -63,7 +68,7 @@ OUTPUT JSON:
 """
     
     # Call GPT
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(api_key=api_key)
     
     response = client.chat.completions.create(
         model="gpt-4o-mini",

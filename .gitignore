@@ -1,6 +1,8 @@
-# Sensitive
+# Sensitive - API Keys and Credentials
 config.py
 .env
+.env.*
+!.env.example
 
 # Data files (regenerated each run)
 data/*.json

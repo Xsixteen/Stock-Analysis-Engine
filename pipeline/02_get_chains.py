@@ -6,12 +6,13 @@ import sys
 import os
 import asyncio
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 from tastytrade import Session, DXLinkStreamer
 from tastytrade.instruments import get_option_chain
 from tastytrade.dxfeed import Quote
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import USERNAME, PASSWORD
+load_dotenv()
+
 
 def load_stock_prices():
     try:
@@ -28,7 +29,15 @@ async def get_chains():
     print("="*60)
     
     prices = load_stock_prices()
-    sess = Session(USERNAME, PASSWORD)
+
+    username = os.getenv("TASTYTRADE_USERNAME")
+    password = os.getenv("TASTYTRADE_PASSWORD")
+
+    if not username or not password:
+        print("❌ Missing TastyTrade credentials in environment variables")
+        sys.exit(1)
+
+    sess = Session(username, password)
     
     chains = {}
     today = datetime.now().date()

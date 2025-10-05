@@ -1,0 +1,20 @@
+# Credit Spread Finder - Python Dependencies
+# Python 3.9+ required
+
+# Data Analysis
+pandas>=2.0.0
+
+# Trading & Market Data
+tastytrade>=10.0.0
+
+# News API
+finnhub-python>=2.4.0
+
+# AI/LLM Analysis
+openai>=1.0.0
+
+# Mathematical Calculations
+scipy>=1.10.0
+
+# Environment Variables
+python-dotenv>=1.0.0

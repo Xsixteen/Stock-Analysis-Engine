@@ -5,14 +5,11 @@ import os
 import json
 import sys
 from datetime import datetime
+from dotenv import load_dotenv
 from openai import OpenAI
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import OPENAI_API_KEY
+load_dotenv()
 
-if not OPENAI_API_KEY:
-    print("❌ Missing OPENAI_API_KEY")
-    sys.exit(1)
 
 def load_comprehensive_data():
     data = {}
@@ -122,7 +119,12 @@ def main():
     print("="*60)
     print("STEP 8: GPT News Analysis")
     print("="*60)
-    
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("❌ Missing OPENAI_API_KEY in environment variables")
+        sys.exit(1)
+
     print("\n📊 Loading data...")
     data = load_comprehensive_data()
     
@@ -136,7 +138,7 @@ def main():
     prompt = create_analysis_prompt(data)
     
     print("\n🤖 Calling GPT for 5W1H analysis...")
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(api_key=api_key)
     
     try:
         response = client.chat.completions.create(
