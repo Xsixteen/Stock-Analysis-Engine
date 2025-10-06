@@ -4,8 +4,8 @@
 # Data Analysis
 pandas>=2.0.0
 
-# Trading & Market Data
-tastytrade>=10.0.0
+# Trading & Market Data - Charles Schwab API
+schwab-py==1.5.1
 
 # News API
 finnhub-python>=2.4.0

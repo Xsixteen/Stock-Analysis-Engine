@@ -3,6 +3,7 @@ config.py
 .env
 .env.*
 !.env.example
+schwab_token.json
 
 # Data files (regenerated each run)
 data/*.json
