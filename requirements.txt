@@ -12,9 +12,13 @@ finnhub-python>=2.4.0
 
 # AI/LLM Analysis
 openai>=1.0.0
+google-generativeai>=0.8.0
 
 # Mathematical Calculations
 scipy>=1.10.0
 
 # Environment Variables
 python-dotenv>=1.0.0
+
+# HTTP Requests
+requests>=2.31.0
