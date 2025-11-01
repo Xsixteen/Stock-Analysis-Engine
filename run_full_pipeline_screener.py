@@ -52,8 +52,9 @@ def main():
         ("01", "pipeline/screener_01_check_config.py", "Check/Create Screener Config"),
         ("02", "pipeline/screener_02_company_overview.py", "Get Company Overview (Alpha Vantage)"),
         ("03", "pipeline/screener_03_gpt_analysis.py", "AI Stock Analysis (Gemini 2.5 Pro)"),
+        ("04", "pipeline/screener_04_markdown_report.py", "Generate Markdown Report"),
         # Add additional steps here:
-        # ("04", "pipeline/screener_04_another.py", "Another Step Description"),
+        # ("05", "pipeline/screener_05_another.py", "Another Step Description"),
     ]
 
     # Execute pipeline steps

@@ -134,7 +134,7 @@ Please provide your analysis in the following JSON format:
 
 def main():
     print("="*60)
-    print("SCREENER STEP 03: AI Stock Analysis (Gemini 2.5 Pro)")
+    print("SCREENER STEP 03: AI Stock Analysis (Gemini 2.5 Flash)")
     print("="*60)
 
     try:
@@ -145,7 +145,7 @@ def main():
 
         # Configure Gemini
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        model = genai.GenerativeModel('gemini-2.5-flash')
 
         # Load overview data
         overview_data = load_overview_data()
@@ -171,7 +171,7 @@ def main():
         # Save results
         output = {
             "timestamp": datetime.now().isoformat(),
-            "model": "gemini-2.0-flash-exp",
+            "model": "gemini-2.5-flash",
             "count": len(overview_data),
             "analyses": analyses
         }
