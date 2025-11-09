@@ -1,3 +1,75 @@
+# What is this?
+
+This project has various pipelines used to investigate Stock trading strategies.
+
+# 📊 Stock Screener Pipeline
+
+The Stock Screener Pipeline provides an alternative approach to analyzing stocks using fundamental data, financial statements, and AI-powered analysis. It offers two execution modes for flexibility.
+
+## 🚀 Quick Start
+
+Run the interactive screener pipeline:
+
+```bash
+python3 run_pipeline_screener.py
+```
+
+## 🎯 Pipeline Modes
+
+### Mode 1: Full Pipeline
+Complete analysis from scratch - ideal for initial setup or complete data refresh.
+
+**Steps:**
+- **Step 01:** Check/Create Screener Config
+- **Step 02:** Get Company Overview (Alpha Vantage API)
+- **Step 02B:** Get Financial Statements (Alpha Vantage API)
+- **Step 02C:** Get Latest Quote Data (Alpha Vantage API)
+- **Step 03:** AI Stock Analysis (Gemini 2.5 Pro)
+- **Step 04:** Generate Markdown Report
+
+**Time:** ~10-15 minutes (depends on API rate limits)
+
+**Use when:** Initial setup, adding new tickers, or refreshing all data
+
+```bash
+# Select option [1] when prompted
+python3 run_pipeline_screener.py
+```
+
+### Mode 2: Update Only
+Fast daily updates - refreshes only time-sensitive data and re-runs analysis.
+
+**Steps:**
+- **Step 02C:** Get Latest Quote Data (Alpha Vantage API)
+- **Step 03:** AI Stock Analysis (Gemini 2.5 Pro)
+- **Step 04:** Generate Markdown Report
+
+**Time:** ~2-3 minutes
+
+**Use when:** Daily market updates with existing company/financial data
+
+```bash
+# Select option [2] when prompted
+python3 run_pipeline_screener.py
+```
+
+## 📋 Pipeline Details
+
+**Data Sources:**
+- Alpha Vantage API for company fundamentals, financial statements, and daily quotes
+- Gemini 2.5 Pro for AI-powered stock analysis and recommendations
+
+**Output:**
+- Markdown report with company analysis, financial metrics, and AI recommendations
+- Structured data files for further analysis
+
+**Configuration:**
+- Config file automatically created on first run
+- Customize ticker list and analysis parameters in screener config
+
+
+
+
 # 📘 Credit Spread Finder - README
 
 **Purpose:** Find the 9 best options trades (credit spreads) from 500 stock tickers in minutes
@@ -144,13 +216,12 @@ python3 pipeline/09_format_trades.py
 <img width="998" height="602" alt="image" src="https://github.com/user-attachments/assets/e39eaa48-7725-4443-93cb-01941329e74d" />
 
 
-## 🤖 Automate 
+## 🤖 Automate
 
 **Step 10** Automate the pipeline
 
 ```bash
 python3 pipeline/10_run_pipeline.py
 ```
-
 
 
