@@ -20,13 +20,35 @@ def load_overview_data():
         data = json.load(f)
     return data["data"]
 
-def analyze_stock_with_gemini(ticker, stock_data, model):
+def load_static_data():
+    """Load financial statement data from static_data.json"""
+    try:
+        with open("data/static_data.json", "r") as f:
+            data = json.load(f)
+            return data.get("data", {})
+    except FileNotFoundError:
+        print("⚠️  Warning: static_data.json not found. Analysis will proceed without financial statements.")
+        return {}
+
+def load_daily_data():
+    """Load daily quote data from daily_data.json"""
+    try:
+        with open("data/daily_data.json", "r") as f:
+            data = json.load(f)
+            return data.get("data", {})
+    except FileNotFoundError:
+        print("⚠️  Warning: daily_data.json not found. Analysis will proceed without current price/volume data.")
+        return {}
+
+def analyze_stock_with_gemini(ticker, stock_data, static_data, daily_data, model):
     """
     Analyze a stock using Gemini 2.5 Pro
 
     Args:
         ticker: Stock symbol
         stock_data: Company overview data
+        static_data: Financial statement data (income, balance sheet, cash flow)
+        daily_data: Current quote data (price, volume, change)
         model: Gemini model instance
 
     Returns:
@@ -41,11 +63,45 @@ def analyze_stock_with_gemini(ticker, stock_data, model):
     sma_data = technical_indicators.get('SMA_50', {})
     rsi_data = technical_indicators.get('RSI_14', {})
 
-    # Get current price (from 52WeekHigh/Low as proxy or other available data)
-    current_price = stock_data.get('50DayMovingAverage', 'N/A')
+    # Extract daily quote data
+    ticker_daily = daily_data.get(ticker, {})
+    current_price = ticker_daily.get('price', stock_data.get('50DayMovingAverage', 'N/A'))
+    current_volume = ticker_daily.get('volume', 'N/A')
+    price_change = ticker_daily.get('change', 'N/A')
+    price_change_percent = ticker_daily.get('change_percent', 'N/A')
+    trading_day = ticker_daily.get('latest_trading_day', 'N/A')
+    day_open = ticker_daily.get('open', 'N/A')
+    day_high = ticker_daily.get('high', 'N/A')
+    day_low = ticker_daily.get('low', 'N/A')
+
+    # Extract financial statement data
+    ticker_static = static_data.get(ticker, {})
+    income_statement = ticker_static.get('income_statement', {})
+    balance_sheet = ticker_static.get('balance_sheet', {})
+    cash_flow = ticker_static.get('cash_flow', {})
+
+    # Get most recent annual reports (first item in array)
+    recent_income_annual = {}
+    recent_balance_annual = {}
+    recent_cash_flow_annual = {}
+
+    if not isinstance(income_statement, dict) or "error" not in income_statement:
+        annual_reports = income_statement.get('annualReports', [])
+        if annual_reports:
+            recent_income_annual = annual_reports[0]
+
+    if not isinstance(balance_sheet, dict) or "error" not in balance_sheet:
+        annual_reports = balance_sheet.get('annualReports', [])
+        if annual_reports:
+            recent_balance_annual = annual_reports[0]
+
+    if not isinstance(cash_flow, dict) or "error" not in cash_flow:
+        annual_reports = cash_flow.get('annualReports', [])
+        if annual_reports:
+            recent_cash_flow_annual = annual_reports[0]
 
     # Prepare the analysis prompt with stock data
-    prompt = f"""You are an expert stock analyst. Apply both fundamental and technical analysis to rate this stock from 1 to 10 where 10 is high quality and 1 is low quality. Determine strengths and weaknesses, if it is undervalued or overvalued, and whether the current price is a good entry point.
+    prompt = f"""You are an expert stock analyst. Apply both fundamental and technical analysis to rate this stock from 1 to 10 where 10 is high quality and 1 is low quality. Determine strengths and weaknesses, if it is undervalued or overvalued, assess the company's financial health, and whether the current price is a good entry point.
 
 Stock: {ticker}
 Company: {stock_data.get('Name', 'N/A')}
@@ -71,8 +127,15 @@ Valuation:
 - EV to Revenue: {stock_data.get('EVToRevenue', 'N/A')}
 - EV to EBITDA: {stock_data.get('EVToEBITDA', 'N/A')}
 
+Current Price & Volume Data (as of {trading_day}):
+- Current Price: ${current_price}
+- Day Open: ${day_open}
+- Day High: ${day_high}
+- Day Low: ${day_low}
+- Volume: {current_volume}
+- Price Change: ${price_change} ({price_change_percent})
+
 Technical Indicators:
-- Current Price (50-Day MA): ${current_price}
 - SMA (50-day): ${sma_data.get('value', 'N/A')} (as of {sma_data.get('latest_date', 'N/A')})
 - RSI (14-day): {rsi_data.get('value', 'N/A')} (as of {rsi_data.get('latest_date', 'N/A')})
 - 52-Week High: ${stock_data.get('52WeekHigh', 'N/A')}
@@ -85,12 +148,48 @@ Analyst Ratings:
 - Sell: {stock_data.get('AnalystRatingSell', 'N/A')}
 - Target Price: ${stock_data.get('AnalystTargetPrice', 'N/A')}
 
+Financial Statements (Most Recent Annual Report):
+Income Statement (Fiscal Year Ending: {recent_income_annual.get('fiscalDateEnding', 'N/A')}):
+- Total Revenue: ${recent_income_annual.get('totalRevenue', 'N/A')}
+- Gross Profit: ${recent_income_annual.get('grossProfit', 'N/A')}
+- Operating Income: ${recent_income_annual.get('operatingIncome', 'N/A')}
+- Net Income: ${recent_income_annual.get('netIncome', 'N/A')}
+- EBITDA: ${recent_income_annual.get('ebitda', 'N/A')}
+- Research & Development: ${recent_income_annual.get('researchAndDevelopment', 'N/A')}
+
+Balance Sheet (Fiscal Year Ending: {recent_balance_annual.get('fiscalDateEnding', 'N/A')}):
+- Total Assets: ${recent_balance_annual.get('totalAssets', 'N/A')}
+- Total Current Assets: ${recent_balance_annual.get('totalCurrentAssets', 'N/A')}
+- Total Liabilities: ${recent_balance_annual.get('totalLiabilities', 'N/A')}
+- Total Current Liabilities: ${recent_balance_annual.get('totalCurrentLiabilities', 'N/A')}
+- Total Shareholder Equity: ${recent_balance_annual.get('totalShareholderEquity', 'N/A')}
+- Cash and Cash Equivalents: ${recent_balance_annual.get('cashAndCashEquivalentsAtCarryingValue', 'N/A')}
+- Short Term Debt: ${recent_balance_annual.get('shortTermDebt', 'N/A')}
+- Long Term Debt: ${recent_balance_annual.get('longTermDebt', 'N/A')}
+
+Cash Flow (Fiscal Year Ending: {recent_cash_flow_annual.get('fiscalDateEnding', 'N/A')}):
+- Operating Cash Flow: ${recent_cash_flow_annual.get('operatingCashflow', 'N/A')}
+- Capital Expenditures: ${recent_cash_flow_annual.get('capitalExpenditures', 'N/A')}
+- Free Cash Flow: ${recent_cash_flow_annual.get('operatingCashflow', 'N/A')} - ${recent_cash_flow_annual.get('capitalExpenditures', 'N/A')}
+- Dividend Payout: ${recent_cash_flow_annual.get('dividendPayout', 'N/A')}
+- Change in Cash and Cash Equivalents: ${recent_cash_flow_annual.get('changeInCashAndCashEquivalents', 'N/A')}
+
 ANALYSIS INSTRUCTIONS:
 1. Use RSI to assess momentum (RSI < 30 = oversold, RSI > 70 = overbought, 30-70 = neutral)
 2. Compare current price to SMA-50 (price above SMA = bullish, below = bearish)
 3. Evaluate if current price is near 52-week high or low
-4. Combine technical signals with fundamental valuation
-5. Determine if this is a good entry point for buying
+4. Analyze current trading volume and intraday price action:
+   - Compare current volume to average volume (high volume = strong interest/conviction)
+   - Evaluate intraday range (high-low spread indicates volatility)
+   - Assess price change and direction (positive/negative momentum)
+5. Combine technical signals with fundamental valuation
+6. Determine if this is a good entry point for buying
+7. Assess company financial health using:
+   - Liquidity ratios (current assets vs current liabilities)
+   - Debt levels (short-term and long-term debt relative to equity)
+   - Cash flow strength (operating cash flow and free cash flow)
+   - Revenue and earnings trends
+   - Profitability metrics (gross profit, operating income, net income margins)
 
 Please provide your analysis in the following JSON format:
 {{
@@ -98,9 +197,11 @@ Please provide your analysis in the following JSON format:
   "valuation": "<undervalued|fairly_valued|overvalued>",
   "buy_signal": "<strong_buy|buy|hold|sell|strong_sell>",
   "entry_point_quality": "<excellent|good|fair|poor>",
+  "company_health": "<excellent|good|fair|poor|concerning>",
   "strengths": ["<strength 1>", "<strength 2>", ...],
   "weaknesses": ["<weakness 1>", "<weakness 2>", ...],
   "technical_summary": "<brief assessment of RSI, SMA, and price action>",
+  "financial_health_summary": "<brief assessment of balance sheet strength, debt levels, cash flow, and overall financial stability>",
   "summary": "<brief overall assessment including whether now is a good time to buy>"
 }}"""
 
@@ -145,18 +246,29 @@ def main():
 
         # Configure Gemini
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-pro')
 
         # Load overview data
         overview_data = load_overview_data()
+
+        # Load static data (financial statements)
+        static_data = load_static_data()
+
+        # Load daily data (current quotes)
+        daily_data = load_daily_data()
+
         print(f"\n🤖 Analyzing {len(overview_data)} stocks with Gemini AI...")
+        if static_data:
+            print(f"   Including financial statement data for enhanced analysis...")
+        if daily_data:
+            print(f"   Including current price and volume data...")
 
         # Analyze each stock
         analyses = {}
         for i, (ticker, stock_data) in enumerate(overview_data.items(), 1):
             print(f"  [{i}/{len(overview_data)}] Analyzing {ticker}...", end=" ")
 
-            analysis = analyze_stock_with_gemini(ticker, stock_data, model)
+            analysis = analyze_stock_with_gemini(ticker, stock_data, static_data, daily_data, model)
             analyses[ticker] = analysis
 
             if "error" in analysis:
@@ -166,7 +278,8 @@ def main():
                 valuation = analysis.get('valuation', 'N/A')
                 buy_signal = analysis.get('buy_signal', 'N/A')
                 entry_quality = analysis.get('entry_point_quality', 'N/A')
-                print(f"✓ (Rating: {rating}/10, {valuation}, {buy_signal}, Entry: {entry_quality})")
+                company_health = analysis.get('company_health', 'N/A')
+                print(f"✓ (Rating: {rating}/10, {valuation}, {buy_signal}, Health: {company_health})")
 
         # Save results
         output = {

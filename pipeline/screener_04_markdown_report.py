@@ -11,6 +11,24 @@ def load_gpt_analysis():
     with open("data/gpt_analysis.json", "r") as f:
         return json.load(f)
 
+def load_overview_data():
+    """Load company overview data from overview.json"""
+    try:
+        with open("data/overview.json", "r") as f:
+            overview = json.load(f)
+            return overview.get("data", {})
+    except FileNotFoundError:
+        return {}
+
+def load_daily_data():
+    """Load daily quote data from daily_data.json"""
+    try:
+        with open("data/daily_data.json", "r") as f:
+            daily = json.load(f)
+            return daily.get("data", {})
+    except FileNotFoundError:
+        return {}
+
 def format_list_items(items, indent=0):
     """Format a list of items as markdown bullet points"""
     indent_str = "  " * indent
@@ -36,25 +54,77 @@ def get_emoji_for_signal(signal):
     }
     return signal_map.get(signal.lower(), "❓")
 
-def generate_summary_table(analyses):
+def generate_summary_table(analyses, overview_data, daily_data):
     """Generate a summary table of all stocks"""
     lines = [
-        "| Ticker | Rating | Valuation | Signal | Entry Quality |",
-        "|--------|--------|-----------|--------|---------------|"
+        "| Ticker | Price | Volume | Change | Rating | Valuation | Signal | Health | Entry Quality | P/E | PEG | EPS | Target |",
+        "|--------|-------|--------|--------|--------|-----------|--------|--------|---------------|-----|-----|-----|--------|"
     ]
 
     for ticker, analysis in analyses.items():
         if "error" in analysis:
-            lines.append(f"| {ticker} | ❌ Error | - | - | - |")
+            lines.append(f"| {ticker} | - | - | - | ❌ Error | - | - | - | - | - | - | - | - |")
         else:
             rating = analysis.get('rating', 'N/A')
             rating_emoji = get_emoji_for_rating(rating) if isinstance(rating, (int, float)) else ""
             valuation = analysis.get('valuation', 'N/A').replace('_', ' ').title()
             signal = analysis.get('buy_signal', 'N/A').replace('_', ' ').title()
             signal_emoji = get_emoji_for_signal(analysis.get('buy_signal', ''))
+            company_health = analysis.get('company_health', 'N/A').title()
             entry = analysis.get('entry_point_quality', 'N/A').title()
 
-            lines.append(f"| {ticker} | {rating_emoji} {rating}/10 | {valuation} | {signal_emoji} {signal} | {entry} |")
+            # Get daily quote data
+            ticker_daily = daily_data.get(ticker, {})
+            current_price = ticker_daily.get('price', 'N/A')
+            volume = ticker_daily.get('volume', 'N/A')
+            change_percent = ticker_daily.get('change_percent', 'N/A')
+
+            # Get fundamental data from overview
+            ticker_overview = overview_data.get(ticker, {})
+            pe_ratio = ticker_overview.get('PERatio', 'N/A')
+            peg_ratio = ticker_overview.get('PEGRatio', 'N/A')
+            eps = ticker_overview.get('EPS', 'N/A')
+            analyst_target = ticker_overview.get('AnalystTargetPrice', 'N/A')
+
+            # Format numbers
+            if pe_ratio != 'N/A' and pe_ratio not in ['None', '', '-']:
+                try:
+                    pe_ratio = f"{float(pe_ratio):.2f}"
+                except:
+                    pass
+
+            if peg_ratio != 'N/A' and peg_ratio not in ['None', '', '-']:
+                try:
+                    peg_ratio = f"{float(peg_ratio):.2f}"
+                except:
+                    pass
+
+            if eps != 'N/A' and eps not in ['None', '', '-']:
+                try:
+                    eps = f"${float(eps):.2f}"
+                except:
+                    pass
+
+            if analyst_target != 'N/A' and analyst_target not in ['None', '', '-']:
+                try:
+                    analyst_target = f"${float(analyst_target):.2f}"
+                except:
+                    pass
+
+            # Format daily data
+            if current_price != 'N/A' and current_price not in ['None', '', '-']:
+                try:
+                    current_price = f"${float(current_price):.2f}"
+                except:
+                    pass
+
+            if volume != 'N/A' and volume not in ['None', '', '-']:
+                try:
+                    volume = f"{int(volume):,}"
+                except:
+                    pass
+
+            lines.append(f"| {ticker} | {current_price} | {volume} | {change_percent} | {rating_emoji} {rating}/10 | {valuation} | {signal_emoji} {signal} | {company_health} | {entry} | {pe_ratio} | {peg_ratio} | {eps} | {analyst_target} |")
 
     return "\n".join(lines)
 
@@ -69,6 +139,7 @@ def generate_detailed_analysis(ticker, analysis):
     signal = analysis.get('buy_signal', 'N/A').replace('_', ' ').title()
     signal_emoji = get_emoji_for_signal(analysis.get('buy_signal', ''))
     entry = analysis.get('entry_point_quality', 'N/A').title()
+    company_health = analysis.get('company_health', 'N/A').title()
 
     sections = [
         f"### {ticker}",
@@ -77,12 +148,16 @@ def generate_detailed_analysis(ticker, analysis):
         f"**Valuation:** {valuation}",
         f"**Buy Signal:** {signal_emoji} {signal}",
         f"**Entry Point Quality:** {entry}",
+        f"**Company Health:** {company_health}",
         "",
         "#### Summary",
         analysis.get('summary', 'No summary available.'),
         "",
         "#### Technical Analysis",
         analysis.get('technical_summary', 'No technical summary available.'),
+        "",
+        "#### Financial Health",
+        analysis.get('financial_health_summary', 'No financial health analysis available.'),
         "",
         "#### Strengths",
         format_list_items(analysis.get('strengths', ['No strengths listed'])),
@@ -94,7 +169,7 @@ def generate_detailed_analysis(ticker, analysis):
 
     return "\n".join(sections)
 
-def generate_markdown_report(data):
+def generate_markdown_report(data, overview_data, daily_data):
     """Generate complete markdown report"""
     timestamp = data.get('timestamp', 'Unknown')
     model = data.get('model', 'Unknown')
@@ -131,7 +206,7 @@ def generate_markdown_report(data):
         "",
         "## Summary Table",
         "",
-        generate_summary_table(analyses),
+        generate_summary_table(analyses, overview_data, daily_data),
         "",
         "---",
         "",
@@ -186,9 +261,17 @@ def main():
         print("\n📊 Loading analysis data...")
         data = load_gpt_analysis()
 
+        # Load overview data for fundamental metrics
+        print("📊 Loading company overview data...")
+        overview_data = load_overview_data()
+
+        # Load daily quote data for current price and volume
+        print("📊 Loading daily quote data...")
+        daily_data = load_daily_data()
+
         # Generate markdown report
         print("📝 Generating markdown report...")
-        markdown_content = generate_markdown_report(data)
+        markdown_content = generate_markdown_report(data, overview_data, daily_data)
 
         # Save to file
         output_path = "data/screener_report.md"
