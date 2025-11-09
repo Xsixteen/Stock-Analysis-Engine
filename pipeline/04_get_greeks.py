@@ -6,11 +6,12 @@ import json
 import sys
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 from tastytrade import Session, DXLinkStreamer
 from tastytrade.dxfeed import Greeks
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import USERNAME, PASSWORD
+load_dotenv()
+
 
 async def get_connected_greeks():
     print("="*60)
@@ -20,8 +21,15 @@ async def get_connected_greeks():
     # Load chains with symbols
     with open("data/chains.json", "r") as f:
         chains_data = json.load(f)
-    
-    sess = Session(USERNAME, PASSWORD)
+
+    username = os.getenv("TASTYTRADE_USERNAME")
+    password = os.getenv("TASTYTRADE_PASSWORD")
+
+    if not username or not password:
+        print("❌ Missing TastyTrade credentials in environment variables")
+        sys.exit(1)
+
+    sess = Session(username, password)
     
     print("\n🧮 Collecting Greeks for exact chain strikes...")
     

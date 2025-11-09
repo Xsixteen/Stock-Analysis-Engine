@@ -6,11 +6,11 @@ import asyncio
 import sys
 import os
 from datetime import datetime
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import USERNAME, PASSWORD
+from dotenv import load_dotenv
 from tastytrade import Session, DXLinkStreamer
 from tastytrade.dxfeed import Quote
+
+load_dotenv()
 
 async def filter_price_liquidity():
     print("="*60)
@@ -19,10 +19,17 @@ async def filter_price_liquidity():
     
     with open("data/sp500.json", "r") as f:
         tickers = json.load(f)["tickers"]
-    
+
     print(f"Input: {len(tickers)} stocks")
-    
-    sess = Session(USERNAME, PASSWORD)
+
+    username = os.getenv("TASTYTRADE_USERNAME")
+    password = os.getenv("TASTYTRADE_PASSWORD")
+
+    if not username or not password:
+        print("❌ Missing TastyTrade credentials in environment variables")
+        sys.exit(1)
+
+    sess = Session(username, password)
     passed = []
     failed = []
     

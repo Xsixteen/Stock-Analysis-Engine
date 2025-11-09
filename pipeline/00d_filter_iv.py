@@ -6,12 +6,13 @@ import json
 import sys
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 from tastytrade import Session, DXLinkStreamer
 from tastytrade.dxfeed import Greeks
 from tastytrade.instruments import get_option_chain
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import USERNAME, PASSWORD
+load_dotenv()
+
 
 async def get_iv_data():
     print("="*60)
@@ -20,10 +21,17 @@ async def get_iv_data():
     
     with open("data/filter2_passed.json", "r") as f:
         stocks = json.load(f)
-    
+
     print(f"Input: {len(stocks)} stocks")
-    
-    sess = Session(USERNAME, PASSWORD)
+
+    username = os.getenv("TASTYTRADE_USERNAME")
+    password = os.getenv("TASTYTRADE_PASSWORD")
+
+    if not username or not password:
+        print("❌ Missing TastyTrade credentials in environment variables")
+        sys.exit(1)
+
+    sess = Session(username, password)
     passed = []
     failed = []
     

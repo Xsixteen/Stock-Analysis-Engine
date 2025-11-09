@@ -7,18 +7,18 @@ import json
 import sys
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def check_prerequisites():
     """Check if everything is set up correctly"""
     # Check credentials
-    username = os.getenv("TASTY_USERNAME")
-    password = os.getenv("TASTY_PASSWORD")
+    username = os.getenv("TASTYTRADE_USERNAME")
+    password = os.getenv("TASTYTRADE_PASSWORD")
     
     if not username or not password:
-        print("❌ Missing TastyTrade credentials")
-        print("Set them with:")
-        print("export TASTY_USERNAME='your_username'")
-        print("export TASTY_PASSWORD='your_password'")
+        print("❌ Missing TastyTrade credentials in environment variables")
         sys.exit(1)
     
     # Check if data directory exists

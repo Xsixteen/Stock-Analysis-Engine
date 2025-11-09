@@ -1,10 +1,14 @@
-# Sensitive
+# Sensitive - API Keys and Credentials
 config.py
 .env
+.env.*
+!.env.example
+schwab_token.json
 
 # Data files (regenerated each run)
 data/*.json
 data/*.csv
+data/*.md
 
 # Python
 __pycache__/
