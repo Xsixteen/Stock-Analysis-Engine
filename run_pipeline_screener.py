@@ -5,9 +5,11 @@ Stock Screener Pipeline - Interactive Mode Selection
 Modes:
 1. Full Pipeline - Runs all steps (initial setup + data collection + analysis)
 2. Update Only - Refreshes daily data and re-runs analysis (faster daily updates)
+3. Update Static Data - Refreshes financial statements (deletes & re-fetches static data)
 
-Add new pipeline steps to the 'full_steps' or 'update_steps' lists below
+Add new pipeline steps to the 'full_steps', 'update_steps', or 'static_steps' lists below
 """
+import os
 import subprocess
 import sys
 import time
@@ -45,7 +47,7 @@ def get_user_choice():
     Prompt user to select pipeline mode
 
     Returns:
-        str: 'full' or 'update'
+        str: 'full', 'update', or 'static'
     """
     print("\n" + "█"*80)
     print("█" + "  STOCK SCREENER PIPELINE".center(78) + "█")
@@ -66,15 +68,23 @@ def get_user_choice():
     print("      • Steps: Daily Data → AI Analysis → Report")
     print("      • Time: ~2-3 minutes")
     print()
+    print("  [3] Update Static Data")
+    print("      • Refreshes financial statements (income, balance sheet, cash flow)")
+    print("      • Use when you need to update fundamental company data")
+    print("      • Steps: Financial Statements")
+    print("      • Time: ~5-10 minutes (depends on number of tickers)")
+    print()
 
     while True:
-        choice = input("Enter your choice (1 or 2): ").strip()
+        choice = input("Enter your choice (1, 2, or 3): ").strip()
         if choice == "1":
             return "full"
         elif choice == "2":
             return "update"
+        elif choice == "3":
+            return "static"
         else:
-            print("❌ Invalid choice. Please enter 1 or 2.")
+            print("❌ Invalid choice. Please enter 1, 2, or 3.")
 
 def main():
     # Get user's choice
@@ -101,9 +111,30 @@ def main():
         ("04", "pipeline/screener_04_markdown_report.py", "Generate Markdown Report"),
     ]
 
+    # Static data update - refresh financial statements
+    static_steps = [
+        ("02b", "pipeline/screener_02b_static_data.py", "Get Financial Statements (Alpha Vantage)"),
+    ]
+
     # Select steps based on mode
-    steps = full_steps if mode == "full" else update_steps
-    mode_name = "FULL PIPELINE" if mode == "full" else "UPDATE ONLY"
+    if mode == "full":
+        steps = full_steps
+        mode_name = "FULL PIPELINE"
+    elif mode == "update":
+        steps = update_steps
+        mode_name = "UPDATE ONLY"
+    else:  # mode == "static"
+        steps = static_steps
+        mode_name = "UPDATE STATIC DATA"
+
+        # Delete static_data.json if it exists
+        static_data_path = "data/static_data.json"
+        if os.path.exists(static_data_path):
+            print("\n" + "="*80)
+            print(f"Removing existing {static_data_path}...")
+            os.remove(static_data_path)
+            print(f"✓ {static_data_path} deleted")
+            print("="*80)
 
     # Display selected mode
     print("\n" + "="*80)

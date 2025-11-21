@@ -2,6 +2,8 @@
 config.py
 .env
 .env.*
+.venv
+.venv.*
 !.env.example
 schwab_token.json
 

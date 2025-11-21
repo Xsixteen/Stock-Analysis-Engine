@@ -3,10 +3,16 @@
 Screener Pipeline Step 03: AI Stock Analysis with Gemini 2.5 Pro
 Analyzes each stock from overview.json using both fundamental and technical analysis
 Includes RSI and SMA analysis to determine optimal entry points
-Requires GEMINI_API_KEY in .env file
+
+Environment Variables:
+- GEMINI_API_KEY (required): API key for Gemini
+- GEMINI_MODEL (optional): Gemini model to use (default: gemini-2.5-pro)
+- GEMINI_API_DELAY (optional): Delay in seconds between API calls (default: 30)
+                                Set to 30 for 2 requests per minute
 """
 import json
 import os
+import time
 from datetime import datetime
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -234,19 +240,25 @@ Please provide your analysis in the following JSON format:
         return {"error": str(e)}
 
 def main():
-    print("="*60)
-    print("SCREENER STEP 03: AI Stock Analysis (Gemini 2.5 Flash)")
-    print("="*60)
-
     try:
         # Get API key from environment
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in .env file")
 
+        # Get model name from environment (default: gemini-2.5-pro)
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
+
+        # Get delay between API calls (default: 30 seconds for 2 requests per minute)
+        api_delay = float(os.getenv("GEMINI_API_DELAY", "30"))
+
+        print("="*60)
+        print(f"SCREENER STEP 03: AI Stock Analysis ({model_name})")
+        print("="*60)
+
         # Configure Gemini
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel(model_name)
 
         # Load overview data
         overview_data = load_overview_data()
@@ -281,10 +293,14 @@ def main():
                 company_health = analysis.get('company_health', 'N/A')
                 print(f"✓ (Rating: {rating}/10, {valuation}, {buy_signal}, Health: {company_health})")
 
+            # Add delay between API calls (skip for last stock)
+            if i < len(overview_data):
+                time.sleep(api_delay)
+
         # Save results
         output = {
             "timestamp": datetime.now().isoformat(),
-            "model": "gemini-2.5-flash",
+            "model": model_name,
             "count": len(overview_data),
             "analyses": analyses
         }
